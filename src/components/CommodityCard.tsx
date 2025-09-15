@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { CommodityData } from "@/types/commodity";
-import { TrendingUp, TrendingDown, Minus } from "lucide-react";
+import { TrendingUp, TrendingDown, Minus, Clock } from "lucide-react";
 
 interface CommodityCardProps {
   commodity: CommodityData;
@@ -71,6 +71,27 @@ export const CommodityCard = ({ commodity }: CommodityCardProps) => {
           <div className="text-xs text-muted-foreground">
             Aktualisiert: {new Date(commodity.lastUpdated).toLocaleTimeString('de-DE')}
           </div>
+          
+          {commodity.news.length > 0 && (
+            <div className="mt-4 space-y-2">
+              <div className="text-xs font-medium text-muted-foreground flex items-center gap-1">
+                <Clock className="h-3 w-3" />
+                Aktuelle News
+              </div>
+              <div className="space-y-2">
+                {commodity.news.slice(0, 2).map((newsItem) => (
+                  <div key={newsItem.id} className="text-xs p-2 bg-muted/50 rounded border-l-2 border-primary/20">
+                    <div className="font-medium text-foreground">{newsItem.title}</div>
+                    <div className="text-muted-foreground mt-1">{newsItem.summary}</div>
+                    <div className="text-muted-foreground mt-1 flex items-center justify-between">
+                      <span>{newsItem.source}</span>
+                      <span>{new Date(newsItem.timestamp).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </CardContent>
     </Card>

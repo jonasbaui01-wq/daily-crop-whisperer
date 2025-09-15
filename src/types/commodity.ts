@@ -1,3 +1,11 @@
+export interface NewsItem {
+  id: string;
+  title: string;
+  summary: string;
+  timestamp: string;
+  source: string;
+}
+
 export interface CommodityData {
   id: string;
   name: string;
@@ -10,6 +18,7 @@ export interface CommodityData {
   lastUpdated: string;
   trend: 'up' | 'down' | 'stable';
   icon: string;
+  news: NewsItem[];
 }
 
 export interface AlertConfig {

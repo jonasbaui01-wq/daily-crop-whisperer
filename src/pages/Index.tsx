@@ -1,23 +1,69 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { CommodityCard } from "@/components/CommodityCard";
 import { PriceChart } from "@/components/PriceChart";
 import { AlertPanel } from "@/components/AlertPanel";
 import { ReportGenerator } from "@/components/ReportGenerator";
 import { ConfigurationPanel } from "@/components/ConfigurationPanel";
+import { ApiKeyInput } from "@/components/ApiKeyInput";
 import { commodityData, generatePriceHistory } from "@/data/commodityData";
-import { BarChart3, TrendingUp, Activity, Settings, FileText, Bell } from "lucide-react";
+import { commodityService } from "@/services/commodityService";
+import { CommodityData } from "@/types/commodity";
+import { BarChart3, TrendingUp, Activity, Settings, FileText, Bell, RefreshCw } from "lucide-react";
+import { useToast } from "@/components/ui/use-toast";
 
 const Index = () => {
   const [selectedCommodity, setSelectedCommodity] = useState(commodityData[0]);
+  const [currentCommodities, setCurrentCommodities] = useState<CommodityData[]>(commodityData);
+  const [isLoading, setIsLoading] = useState(false);
+  const [hasApiKey, setHasApiKey] = useState(commodityService.hasApiKey());
+  const { toast } = useToast();
   
-  const totalCommodities = commodityData.length;
-  const positiveTrends = commodityData.filter(c => c.changePercent > 0).length;
-  const criticalAlerts = commodityData.filter(c => Math.abs(c.changePercent) > 5).length;
+  const totalCommodities = currentCommodities.length;
+  const positiveTrends = currentCommodities.filter(c => c.changePercent > 0).length;
+  const criticalAlerts = currentCommodities.filter(c => Math.abs(c.changePercent) > 5).length;
 
   const priceHistory = generatePriceHistory(selectedCommodity.price);
+
+  const handleApiKeySet = (apiKey: string) => {
+    commodityService.setApiKey(apiKey);
+    setHasApiKey(true);
+    refreshData();
+  };
+
+  const refreshData = async () => {
+    if (!hasApiKey) return;
+    
+    setIsLoading(true);
+    try {
+      const freshData = await commodityService.fetchAllCommodities();
+      setCurrentCommodities(freshData);
+      if (freshData.length > 0) {
+        setSelectedCommodity(freshData[0]);
+      }
+      toast({
+        title: 'Daten aktualisiert',
+        description: 'Rohstoffpreise wurden erfolgreich geladen',
+      });
+    } catch (error) {
+      toast({
+        title: 'Fehler beim Laden',
+        description: 'Rohstoffpreise konnten nicht geladen werden',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (hasApiKey) {
+      refreshData();
+    }
+  }, [hasApiKey]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -36,11 +82,23 @@ const Index = () => {
             <div className="flex items-center gap-4">
               <Badge variant="outline" className="flex items-center gap-1">
                 <Activity className="h-3 w-3" />
-                Live
+                {hasApiKey ? 'Live' : 'Demo'}
               </Badge>
               <Badge variant="secondary">
                 {new Date().toLocaleDateString('de-DE')}
               </Badge>
+              {hasApiKey && (
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={refreshData}
+                  disabled={isLoading}
+                  className="flex items-center gap-2"
+                >
+                  <RefreshCw className={`h-3 w-3 ${isLoading ? 'animate-spin' : ''}`} />
+                  {isLoading ? 'Lädt...' : 'Aktualisieren'}
+                </Button>
+              )}
             </div>
           </div>
         </div>
@@ -111,9 +169,13 @@ const Index = () => {
           </TabsList>
 
           <TabsContent value="dashboard" className="space-y-6">
+            {/* API Key Setup */}
+            <ApiKeyInput onApiKeySet={handleApiKeySet} hasApiKey={hasApiKey} />
+            
+            {/* Commodity Cards */}
             {/* Commodity Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {commodityData.map(commodity => (
+              {currentCommodities.map(commodity => (
                 <div 
                   key={commodity.id}
                   className="cursor-pointer transition-transform hover:scale-105"

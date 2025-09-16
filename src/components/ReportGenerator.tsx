@@ -5,10 +5,12 @@ import { Badge } from "@/components/ui/badge";
 import { FileText, Download, Mail, Calendar, TrendingUp, TrendingDown, Minus } from "lucide-react";
 import { commodityData } from "@/data/commodityData";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 export const ReportGenerator = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [reportGenerated, setReportGenerated] = useState(false);
+  const [isSending, setIsSending] = useState(false);
   const { toast } = useToast();
 
   const generateReport = async () => {
@@ -26,11 +28,43 @@ export const ReportGenerator = () => {
     });
   };
 
-  const sendReport = () => {
-    toast({
-      title: "Bericht versendet",
-      description: "Der Bericht wurde an die konfigurierten E-Mail-Adressen gesendet.",
-    });
+  const sendReport = async () => {
+    setIsSending(true);
+    
+    try {
+      // Get email from localStorage (from ConfigurationPanel)
+      const emailAddress = localStorage.getItem('userEmail') || 'user@example.com';
+      
+      const reportData = {
+        date: new Date().toLocaleDateString('de-DE'),
+        commodities: commodityData
+      };
+
+      const { data, error } = await supabase.functions.invoke('send-report', {
+        body: { 
+          email: emailAddress,
+          reportData 
+        }
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      toast({
+        title: "Bericht versendet",
+        description: `Der Bericht wurde erfolgreich an ${emailAddress} gesendet.`,
+      });
+    } catch (error) {
+      console.error('Error sending report:', error);
+      toast({
+        title: "Fehler beim Versenden",
+        description: "Der Bericht konnte nicht versendet werden. Bitte versuchen Sie es später erneut.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSending(false);
+    }
   };
 
   const getTrendIcon = (trend: string) => {
@@ -69,9 +103,9 @@ export const ReportGenerator = () => {
                   <Download className="h-4 w-4 mr-2" />
                   PDF herunterladen
                 </Button>
-                <Button variant="outline" size="sm" onClick={sendReport}>
+                <Button variant="outline" size="sm" onClick={sendReport} disabled={isSending}>
                   <Mail className="h-4 w-4 mr-2" />
-                  Per E-Mail senden
+                  {isSending ? "Wird gesendet..." : "Per E-Mail senden"}
                 </Button>
               </div>
             )}

@@ -27,6 +27,9 @@ export const ConfigurationPanel = () => {
   };
 
   const saveConfiguration = () => {
+    // Save email to localStorage for the ReportGenerator to use
+    localStorage.setItem('userEmail', emailAddress);
+    
     toast({
       title: "Konfiguration gespeichert",
       description: "Ihre Einstellungen wurden erfolgreich aktualisiert.",

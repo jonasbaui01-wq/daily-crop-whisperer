@@ -25,7 +25,7 @@ export const ApiKeyInput = ({ onApiKeySet, hasApiKey }: ApiKeyInputProps) => {
       onApiKeySet(apiKey);
       toast({
         title: 'API Key gespeichert',
-        description: 'Rohstoffpreise werden jetzt von Alpha Vantage geladen',
+        description: 'Rohstoffpreise werden jetzt von Commodities-API geladen',
       });
       setApiKey('');
     } catch (error) {
@@ -52,7 +52,7 @@ export const ApiKeyInput = ({ onApiKeySet, hasApiKey }: ApiKeyInputProps) => {
           <div className="flex items-center justify-between">
             <div>
               <Badge variant="outline" className="text-success border-success">
-                Alpha Vantage verbunden
+                Commodities-API verbunden
               </Badge>
               <p className="text-sm text-muted-foreground mt-1">
                 Echte Rohstoffpreise werden geladen
@@ -74,21 +74,21 @@ export const ApiKeyInput = ({ onApiKeySet, hasApiKey }: ApiKeyInputProps) => {
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="text-sm text-muted-foreground">
-          <p>Für echte Rohstoffpreise benötigen Sie einen kostenlosen Alpha Vantage API Key:</p>
+          <p>Für echte Rohstoffpreise benötigen Sie einen Commodities-API Key:</p>
           <a 
-            href="https://www.alphavantage.co/support/#api-key" 
+            href="https://commodities-api.com/" 
             target="_blank" 
             rel="noopener noreferrer"
             className="inline-flex items-center gap-1 text-primary hover:underline mt-2"
           >
-            Kostenlosen API Key erhalten <ExternalLink className="h-3 w-3" />
+            API Key erhalten <ExternalLink className="h-3 w-3" />
           </a>
         </div>
         
         <form onSubmit={handleSubmit} className="space-y-3">
           <Input
             type="text"
-            placeholder="Ihr Alpha Vantage API Key"
+            placeholder="Ihr Commodities-API Key"
             value={apiKey}
             onChange={(e) => setApiKey(e.target.value)}
             className="font-mono"

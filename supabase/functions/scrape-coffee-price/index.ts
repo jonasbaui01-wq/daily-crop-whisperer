@@ -35,7 +35,7 @@ serve(async (req) => {
 
     console.log('Starting coffee price scraping...');
 
-    // Scrape the coffee price page
+    // Scrape the coffee price page from Yahoo Finance
     const firecrawlResponse = await fetch('https://api.firecrawl.dev/v0/scrape', {
       method: 'POST',
       headers: {
@@ -43,7 +43,7 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        url: 'https://www.finanzen.net/rohstoffe/kaffeepreis',
+        url: 'https://finance.yahoo.com/quote/KC%3DF/',
         formats: ['markdown'],
         onlyMainContent: true
       }),
@@ -60,13 +60,12 @@ serve(async (req) => {
     // Parse the markdown content to extract price information
     const markdown = firecrawlData.data.markdown;
     
-    // Look for price patterns in the markdown
-    // Common patterns: "123,45 EUR" or "1.234,56" or similar
+    // Look for price patterns in the markdown (Yahoo Finance uses USD format)
+    // Common patterns: "$123.45" or "123.45" (US format with dots for decimals)
     const pricePatterns = [
-      /(\d{1,3}(?:\.\d{3})*,\d{2})\s*(?:EUR|€)/gi,
-      /(\d+,\d{2})\s*(?:EUR|€)/gi,
-      /€\s*(\d{1,3}(?:\.\d{3})*,\d{2})/gi,
-      /(\d{1,3}(?:\.\d{3})*,\d{2})/g
+      /\$(\d{1,3}(?:,\d{3})*\.\d{2})/gi,
+      /(\d{1,3}(?:,\d{3})*\.\d{2})\s*(?:USD|\$)/gi,
+      /(\d{1,3}(?:,\d{3})*\.\d{2})/g
     ];
 
     let extractedPrice: number | null = null;
@@ -79,13 +78,13 @@ serve(async (req) => {
         const match = matches[0];
         priceText = match;
         
-        // Extract numeric value and convert German decimal format
-        const numericMatch = match.match(/(\d{1,3}(?:\.\d{3})*,\d{2})/);
+        // Extract numeric value from US dollar format
+        const numericMatch = match.match(/(\d{1,3}(?:,\d{3})*\.\d{2})/);
         if (numericMatch) {
-          const germanFormat = numericMatch[1];
-          // Convert German format (1.234,56) to English format (1234.56)
-          const englishFormat = germanFormat.replace(/\./g, '').replace(',', '.');
-          extractedPrice = parseFloat(englishFormat);
+          const usFormat = numericMatch[1];
+          // Remove commas from US format (1,234.56) to get (1234.56)
+          const cleanFormat = usFormat.replace(/,/g, '');
+          extractedPrice = parseFloat(cleanFormat);
           break;
         }
       }
@@ -96,23 +95,23 @@ serve(async (req) => {
       throw new Error('Could not extract price from scraped content');
     }
 
-    console.log(`Extracted price: ${extractedPrice} EUR from text: ${priceText}`);
+    console.log(`Extracted price: ${extractedPrice} USD from text: ${priceText}`);
 
     // Look for change information
     let changeAmount: number | null = null;
     let changePercent: number | null = null;
 
-    // Look for change patterns like "+1,23" or "-0,45%" 
+    // Look for change patterns like "+1.23" or "-0.45%" (US format)
     const changePatterns = [
-      /([+-]\d+,\d{2})\s*%/g,
-      /([+-]\d+,\d{2})/g
+      /([+-]\d+\.\d{2})\s*%/g,
+      /([+-]\d+\.\d{2})/g
     ];
 
     for (const pattern of changePatterns) {
       const matches = markdown.match(pattern);
       if (matches) {
         for (const match of matches) {
-          const numericValue = parseFloat(match.replace(',', '.'));
+          const numericValue = parseFloat(match);
           if (match.includes('%')) {
             changePercent = numericValue;
           } else {
@@ -129,10 +128,10 @@ serve(async (req) => {
       .insert({
         commodity_id: 'coffee',
         price: extractedPrice,
-        currency: 'EUR',
+        currency: 'USD',
         change_amount: changeAmount,
         change_percent: changePercent,
-        source_url: 'https://www.finanzen.net/rohstoffe/kaffeepreis',
+        source_url: 'https://finance.yahoo.com/quote/KC%3DF/',
         scraped_at: new Date().toISOString()
       });
 
@@ -147,10 +146,10 @@ serve(async (req) => {
         success: true,
         data: {
           price: extractedPrice,
-          currency: 'EUR',
+          currency: 'USD',
           change_amount: changeAmount,
           change_percent: changePercent,
-          source_url: 'https://www.finanzen.net/rohstoffe/kaffeepreis',
+          source_url: 'https://finance.yahoo.com/quote/KC%3DF/',
           scraped_at: new Date().toISOString()
         }
       }),

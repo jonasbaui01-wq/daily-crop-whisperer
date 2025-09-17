@@ -23,7 +23,7 @@ interface CommodityMapping {
 const commodityMappings: CommodityMapping[] = [
   {
     id: 'coffee',
-    symbol: 'COFFEE',
+    symbol: 'KC=F', // Coffee futures
     name: 'Coffee',
     nameDe: 'Kaffeepreise',
     icon: '☕',
@@ -32,7 +32,7 @@ const commodityMappings: CommodityMapping[] = [
   },
   {
     id: 'sugar',
-    symbol: 'SUGAR',
+    symbol: 'SB=F', // Sugar futures
     name: 'Sugar',
     nameDe: 'Zuckerernte',
     icon: '🍭',
@@ -41,7 +41,7 @@ const commodityMappings: CommodityMapping[] = [
   },
   {
     id: 'cocoa',
-    symbol: 'COCOA',
+    symbol: 'CC=F', // Cocoa futures
     name: 'Cocoa',
     nameDe: 'Kakaopreise',
     icon: '🍫',
@@ -50,7 +50,7 @@ const commodityMappings: CommodityMapping[] = [
   },
   {
     id: 'wheat',
-    symbol: 'WHEAT',
+    symbol: 'ZW=F', // Wheat futures
     name: 'Wheat',
     nameDe: 'Mehlpreise',
     icon: '🌾',
@@ -99,27 +99,21 @@ const mockNews: { [key: string]: NewsItem[] } = {
 };
 
 class CommodityService {
-  private apiKey: string = 'y624k2qvl4143pikpo5m0r602zq5f3ocnelcj3kxy3g5073r8a7t6llpoyu2';
-  private baseUrl = 'https://commodities-api.com/api';
+  private apiKey: string = 'demo'; // Free tier API key
+  private baseUrl = 'https://api.twelvedata.com';
 
   constructor() {
-    // API key is pre-configured
+    // Using Twelve Data API - free tier allows 8 requests per minute
   }
 
   setApiKey(apiKey: string) {
     this.apiKey = apiKey;
   }
 
-  async fetchCommodityPrices(): Promise<CommoditiesApiResponse | null> {
-    if (!this.apiKey) {
-      console.warn('Commodities API key not set');
-      return null;
-    }
-
+  async fetchCommodityPrice(symbol: string): Promise<{ price: number; change: number; changePercent: number } | null> {
     try {
-      const symbols = commodityMappings.map(m => m.symbol).join(',');
       const response = await fetch(
-        `${this.baseUrl}/latest?access_key=${this.apiKey}&symbols=${symbols}`
+        `${this.baseUrl}/quote?symbol=${symbol}&apikey=${this.apiKey}`
       );
       
       if (!response.ok) {
@@ -128,14 +122,18 @@ class CommodityService {
       
       const data = await response.json();
       
-      if (!data.success) {
-        console.warn('Commodities API request failed:', data);
+      if (data.status === 'error') {
+        console.warn('Twelve Data API request failed:', data.message);
         return null;
       }
       
-      return data;
+      return {
+        price: parseFloat(data.close || data.price),
+        change: parseFloat(data.change || '0'),
+        changePercent: parseFloat(data.percent_change || '0')
+      };
     } catch (error) {
-      console.error('Error fetching commodity prices:', error);
+      console.error('Error fetching commodity price:', error);
       return null;
     }
   }
@@ -144,47 +142,34 @@ class CommodityService {
     const commodities: CommodityData[] = [];
 
     try {
-      const data = await this.fetchCommodityPrices();
-      
-      if (data && data.success && data.rates) {
-        for (const mapping of commodityMappings) {
-          const rate = data.rates[mapping.symbol];
+      // Fetch each commodity with a small delay to respect rate limits
+      for (const mapping of commodityMappings) {
+        const priceData = await this.fetchCommodityPrice(mapping.symbol);
+        
+        if (priceData) {
+          const commodity: CommodityData = {
+            id: mapping.id,
+            name: mapping.name,
+            nameDe: mapping.nameDe,
+            price: priceData.price,
+            currency: mapping.currency,
+            change: priceData.change,
+            changePercent: priceData.changePercent,
+            unit: mapping.unit,
+            lastUpdated: new Date().toISOString(),
+            trend: priceData.changePercent > 0.1 ? 'up' : priceData.changePercent < -0.1 ? 'down' : 'stable',
+            icon: mapping.icon,
+            news: mockNews[mapping.id] || []
+          };
           
-          if (rate && rate > 0) {
-            // Convert rate to price - rates are in base currency per commodity unit
-            const price = rate;
-            
-            // Generate realistic change data based on mock data patterns
-            const mockData = this.getMockCommodity(mapping);
-            const change = mockData.change;
-            const changePercent = mockData.changePercent;
-            
-            const commodity: CommodityData = {
-              id: mapping.id,
-              name: mapping.name,
-              nameDe: mapping.nameDe,
-              price: price,
-              currency: mapping.currency,
-              change: change,
-              changePercent: changePercent,
-              unit: mapping.unit,
-              lastUpdated: new Date().toISOString(),
-              trend: changePercent > 0.1 ? 'up' : changePercent < -0.1 ? 'down' : 'stable',
-              icon: mapping.icon,
-              news: mockNews[mapping.id] || []
-            };
-            
-            commodities.push(commodity);
-          } else {
-            // Fallback to mock data if rate not available
-            commodities.push(this.getMockCommodity(mapping));
-          }
-        }
-      } else {
-        // Fallback to mock data if API fails
-        for (const mapping of commodityMappings) {
+          commodities.push(commodity);
+        } else {
+          // Fallback to mock data if API fails for this commodity
           commodities.push(this.getMockCommodity(mapping));
         }
+        
+        // Add a small delay between requests to respect rate limits (8 requests per minute)
+        await new Promise(resolve => setTimeout(resolve, 500));
       }
     } catch (error) {
       console.error('Error fetching commodities:', error);

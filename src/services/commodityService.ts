@@ -142,8 +142,22 @@ class CommodityService {
     const commodities: CommodityData[] = [];
 
     try {
+      // First check if we have scraped coffee data
+      const { scrapedDataService } = await import('./scrapedDataService');
+      const scrapedCoffee = await scrapedDataService.getLatestCoffeePrice();
+      
+      if (scrapedCoffee) {
+        commodities.push(scrapedCoffee);
+        console.log('Using scraped coffee price data');
+      }
+
       // Fetch each commodity with a small delay to respect rate limits
       for (const mapping of commodityMappings) {
+        // Skip coffee if we already have scraped data
+        if (mapping.id === 'coffee' && scrapedCoffee) {
+          continue;
+        }
+
         const priceData = await this.fetchCommodityPrice(mapping.symbol);
         
         if (priceData) {

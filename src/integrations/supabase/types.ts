@@ -152,6 +152,42 @@ export type Database = {
         }
         Relationships: []
       }
+      scraped_commodity_prices: {
+        Row: {
+          change_amount: number | null
+          change_percent: number | null
+          commodity_id: string
+          created_at: string
+          currency: string
+          id: string
+          price: number
+          scraped_at: string
+          source_url: string
+        }
+        Insert: {
+          change_amount?: number | null
+          change_percent?: number | null
+          commodity_id: string
+          created_at?: string
+          currency?: string
+          id?: string
+          price: number
+          scraped_at?: string
+          source_url: string
+        }
+        Update: {
+          change_amount?: number | null
+          change_percent?: number | null
+          commodity_id?: string
+          created_at?: string
+          currency?: string
+          id?: string
+          price?: number
+          scraped_at?: string
+          source_url?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

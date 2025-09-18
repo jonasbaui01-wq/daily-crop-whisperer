@@ -43,7 +43,7 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        url: 'https://finance.yahoo.com/quote/KC%3DF/',
+        url: 'https://de.finance.yahoo.com/quote/KC%3DF/',
         formats: ['markdown'],
         onlyMainContent: true
       }),
@@ -131,7 +131,7 @@ serve(async (req) => {
         currency: 'USD',
         change_amount: changeAmount,
         change_percent: changePercent,
-        source_url: 'https://finance.yahoo.com/quote/KC%3DF/',
+        source_url: 'https://de.finance.yahoo.com/quote/KC%3DF/',
         scraped_at: new Date().toISOString()
       });
 
@@ -149,7 +149,7 @@ serve(async (req) => {
           currency: 'USD',
           change_amount: changeAmount,
           change_percent: changePercent,
-          source_url: 'https://finance.yahoo.com/quote/KC%3DF/',
+          source_url: 'https://de.finance.yahoo.com/quote/KC%3DF/',
           scraped_at: new Date().toISOString()
         }
       }),

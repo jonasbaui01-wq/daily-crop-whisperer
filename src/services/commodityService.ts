@@ -99,95 +99,56 @@ const mockNews: { [key: string]: NewsItem[] } = {
 };
 
 class CommodityService {
-  private apiKey: string = 'demo'; // Free tier API key
-  private baseUrl = 'https://api.twelvedata.com';
+  // Removed API functionality - using only scraped data and mock data
 
   constructor() {
-    // Using Twelve Data API - free tier allows 8 requests per minute
+    // Using only scraped data from Yahoo Finance and mock data
   }
 
-  setApiKey(apiKey: string) {
-    this.apiKey = apiKey;
-  }
-
-  async fetchCommodityPrice(symbol: string): Promise<{ price: number; change: number; changePercent: number } | null> {
-    try {
-      const response = await fetch(
-        `${this.baseUrl}/quote?symbol=${symbol}&apikey=${this.apiKey}`
-      );
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      
-      const data = await response.json();
-      
-      if (data.status === 'error') {
-        console.warn('Twelve Data API request failed:', data.message);
-        return null;
-      }
-      
-      return {
-        price: parseFloat(data.close || data.price),
-        change: parseFloat(data.change || '0'),
-        changePercent: parseFloat(data.percent_change || '0')
-      };
-    } catch (error) {
-      console.error('Error fetching commodity price:', error);
-      return null;
-    }
-  }
+  // Removed fetchCommodityPrice method - using only scraped data
 
   async fetchAllCommodities(): Promise<CommodityData[]> {
     const commodities: CommodityData[] = [];
 
     try {
-      // First check if we have scraped coffee data
+      // Import scraped data service
       const { scrapedDataService } = await import('./scrapedDataService');
-      const scrapedCoffee = await scrapedDataService.getLatestCoffeePrice();
       
+      // Check for scraped coffee data
+      const scrapedCoffee = await scrapedDataService.getLatestCoffeePrice();
       if (scrapedCoffee) {
         commodities.push(scrapedCoffee);
         console.log('Using scraped coffee price data');
+      } else {
+        // Fallback to mock data for coffee
+        const coffeeMapping = commodityMappings.find(m => m.id === 'coffee');
+        if (coffeeMapping) {
+          commodities.push(this.getMockCommodity(coffeeMapping));
+        }
       }
 
-      // Fetch each commodity with a small delay to respect rate limits
-      for (const mapping of commodityMappings) {
-        // Skip coffee if we already have scraped data
-        if (mapping.id === 'coffee' && scrapedCoffee) {
-          continue;
+      // Check for scraped wheat data
+      const scrapedWheat = await scrapedDataService.getLatestWheatPrice();
+      if (scrapedWheat) {
+        commodities.push(scrapedWheat);
+        console.log('Using scraped wheat price data');
+      } else {
+        // Fallback to mock data for wheat
+        const wheatMapping = commodityMappings.find(m => m.id === 'wheat');
+        if (wheatMapping) {
+          commodities.push(this.getMockCommodity(wheatMapping));
         }
+      }
 
-        const priceData = await this.fetchCommodityPrice(mapping.symbol);
-        
-        if (priceData) {
-          const commodity: CommodityData = {
-            id: mapping.id,
-            name: mapping.name,
-            nameDe: mapping.nameDe,
-            price: priceData.price,
-            currency: mapping.currency,
-            change: priceData.change,
-            changePercent: priceData.changePercent,
-            unit: mapping.unit,
-            lastUpdated: new Date().toISOString(),
-            trend: priceData.changePercent > 0.1 ? 'up' : priceData.changePercent < -0.1 ? 'down' : 'stable',
-            icon: mapping.icon,
-            news: mockNews[mapping.id] || []
-          };
-          
-          commodities.push(commodity);
-        } else {
-          // Fallback to mock data if API fails for this commodity
+      // Add other commodities with mock data (excluding coffee and wheat)
+      for (const mapping of commodityMappings) {
+        if (mapping.id !== 'coffee' && mapping.id !== 'wheat') {
           commodities.push(this.getMockCommodity(mapping));
         }
-        
-        // Add a small delay between requests to respect rate limits (8 requests per minute)
-        await new Promise(resolve => setTimeout(resolve, 500));
       }
     } catch (error) {
       console.error('Error fetching commodities:', error);
-      // Fallback to mock data
+      // Fallback to mock data for all commodities
       for (const mapping of commodityMappings) {
         commodities.push(this.getMockCommodity(mapping));
       }
@@ -256,7 +217,7 @@ class CommodityService {
   }
 
   hasApiKey(): boolean {
-    return !!this.apiKey;
+    return true; // Always return true since we don't need API key anymore
   }
 }
 

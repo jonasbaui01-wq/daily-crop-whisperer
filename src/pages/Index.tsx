@@ -8,7 +8,7 @@ import { PriceChart } from "@/components/PriceChart";
 import { AlertPanel } from "@/components/AlertPanel";
 import { ReportGenerator } from "@/components/ReportGenerator";
 import { ConfigurationPanel } from "@/components/ConfigurationPanel";
-import { ApiKeyInput } from "@/components/ApiKeyInput";
+// Removed ApiKeyInput import - no longer needed
 import { commodityData, generatePriceHistory } from "@/data/commodityData";
 import { commodityService } from "@/services/commodityService";
 import { CommodityData } from "@/types/commodity";
@@ -19,7 +19,6 @@ const Index = () => {
   const [selectedCommodity, setSelectedCommodity] = useState(commodityData[0]);
   const [currentCommodities, setCurrentCommodities] = useState<CommodityData[]>(commodityData);
   const [isLoading, setIsLoading] = useState(false);
-  const [hasApiKey, setHasApiKey] = useState(commodityService.hasApiKey());
   const { toast } = useToast();
   
   const totalCommodities = currentCommodities.length;
@@ -28,14 +27,7 @@ const Index = () => {
 
   const priceHistory = generatePriceHistory(selectedCommodity.price);
 
-  const handleApiKeySet = (apiKey: string) => {
-    commodityService.setApiKey(apiKey);
-    setHasApiKey(true);
-    refreshData();
-  };
-
   const refreshData = async () => {
-    if (!hasApiKey) return;
     
     setIsLoading(true);
     try {
@@ -60,10 +52,8 @@ const Index = () => {
   };
 
   useEffect(() => {
-    if (hasApiKey) {
-      refreshData();
-    }
-  }, [hasApiKey]);
+    refreshData();
+  }, []);
 
   return (
     <div className="min-h-screen bg-background">
@@ -82,23 +72,21 @@ const Index = () => {
             <div className="flex items-center gap-4">
               <Badge variant="outline" className="flex items-center gap-1">
                 <Activity className="h-3 w-3" />
-                {hasApiKey ? 'Live' : 'Demo'}
+                Live
               </Badge>
               <Badge variant="secondary">
                 {new Date().toLocaleDateString('de-DE')}
               </Badge>
-              {hasApiKey && (
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={refreshData}
-                  disabled={isLoading}
-                  className="flex items-center gap-2"
-                >
-                  <RefreshCw className={`h-3 w-3 ${isLoading ? 'animate-spin' : ''}`} />
-                  {isLoading ? 'Lädt...' : 'Aktualisieren'}
-                </Button>
-              )}
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={refreshData}
+                disabled={isLoading}
+                className="flex items-center gap-2"
+              >
+                <RefreshCw className={`h-3 w-3 ${isLoading ? 'animate-spin' : ''}`} />
+                {isLoading ? 'Lädt...' : 'Aktualisieren'}
+              </Button>
             </div>
           </div>
         </div>
@@ -169,10 +157,6 @@ const Index = () => {
           </TabsList>
 
           <TabsContent value="dashboard" className="space-y-6">
-            {/* API Key Setup */}
-            <ApiKeyInput onApiKeySet={handleApiKeySet} hasApiKey={hasApiKey} />
-            
-            {/* Commodity Cards */}
             {/* Commodity Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {currentCommodities.map(commodity => (

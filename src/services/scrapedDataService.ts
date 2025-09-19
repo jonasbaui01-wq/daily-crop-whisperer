@@ -76,6 +76,66 @@ class ScrapedDataService {
     }
   }
 
+  async getLatestWheatPrice(): Promise<CommodityData | null> {
+    try {
+      const { data, error } = await supabase
+        .from('scraped_commodity_prices')
+        .select('*')
+        .eq('commodity_id', 'wheat')
+        .order('scraped_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (error) {
+        console.error('Error fetching scraped wheat price:', error);
+        return null;
+      }
+
+      if (!data) {
+        console.log('No scraped wheat price data found');
+        return null;
+      }
+
+      const scrapedData = data as ScrapedCommodityPrice;
+
+      // Convert to CommodityData format
+      const commodityData: CommodityData = {
+        id: 'wheat',
+        name: 'Wheat',
+        nameDe: 'Weizenpreise (Live)',
+        price: scrapedData.price,
+        currency: scrapedData.currency,
+        change: scrapedData.change_amount || 0,
+        changePercent: scrapedData.change_percent || 0,
+        unit: 'bu',
+        lastUpdated: scrapedData.scraped_at,
+        trend: (scrapedData.change_percent || 0) > 0.1 ? 'up' : (scrapedData.change_percent || 0) < -0.1 ? 'down' : 'stable',
+        icon: '🌾',
+        news: [
+          {
+            id: 'wheat-scraped-1',
+            title: 'Weizenpreise aus aktueller Marktanalyse',
+            summary: 'Live-Daten von Yahoo Finance zeigen aktuelle Marktentwicklung',
+            timestamp: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
+            source: 'Yahoo Finance'
+          },
+          {
+            id: 'wheat-scraped-2',
+            title: 'Weizen-Futures zeigen Volatilität',
+            summary: 'Schwankende Preise aufgrund internationaler Handelsbedingungen',
+            timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+            source: 'Commodities Tracker'
+          }
+        ]
+      };
+
+      return commodityData;
+    } catch (error) {
+      console.error('Error in getLatestWheatPrice:', error);
+      return null;
+    }
+  }
+
   async triggerCoffeePriceScraping(): Promise<{ success: boolean; error?: string }> {
     try {
       const { data, error } = await supabase.functions.invoke('scrape-coffee-price', {
@@ -84,6 +144,24 @@ class ScrapedDataService {
 
       if (error) {
         console.error('Error triggering coffee price scraping:', error);
+        return { success: false, error: error.message };
+      }
+
+      return { success: true };
+    } catch (error) {
+      console.error('Error invoking scrape function:', error);
+      return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+    }
+  }
+
+  async triggerWheatPriceScraping(): Promise<{ success: boolean; error?: string }> {
+    try {
+      const { data, error } = await supabase.functions.invoke('scrape-wheat-price', {
+        body: {}
+      });
+
+      if (error) {
+        console.error('Error triggering wheat price scraping:', error);
         return { success: false, error: error.message };
       }
 

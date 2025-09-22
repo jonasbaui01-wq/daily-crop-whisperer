@@ -13,5 +13,17 @@ verify_jwt = false
 [functions.scrape-coffee-price]
 verify_jwt = false
 
+[functions.scrape-coffee-price-yfinance]
+verify_jwt = false
+
+[functions.scrape-sugar-price]
+verify_jwt = false
+
+[functions.scrape-cocoa-price]
+verify_jwt = false
+
+[functions.scrape-butter-price]
+verify_jwt = false
+
 [functions.scrape-wheat-price]
 verify_jwt = false

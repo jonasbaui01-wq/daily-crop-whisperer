@@ -136,6 +136,162 @@ class ScrapedDataService {
     }
   }
 
+  async getLatestSugarPrice(): Promise<CommodityData | null> {
+    try {
+      const { data, error } = await supabase
+        .from('scraped_commodity_prices')
+        .select('*')
+        .eq('commodity_id', 'sugar')
+        .order('scraped_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (error) {
+        console.error('Error fetching scraped sugar price:', error);
+        return null;
+      }
+
+      if (!data) {
+        console.log('No scraped sugar price data found');
+        return null;
+      }
+
+      const scrapedData = data as ScrapedCommodityPrice;
+
+      const commodityData: CommodityData = {
+        id: 'sugar',
+        name: 'Sugar',
+        nameDe: 'Zuckerpreise (Live)',
+        price: scrapedData.price,
+        currency: scrapedData.currency,
+        change: scrapedData.change_amount || 0,
+        changePercent: scrapedData.change_percent || 0,
+        unit: 'ton',
+        lastUpdated: scrapedData.scraped_at,
+        trend: (scrapedData.change_percent || 0) > 0.1 ? 'up' : (scrapedData.change_percent || 0) < -0.1 ? 'down' : 'stable',
+        icon: '🍭',
+        news: [
+          {
+            id: 'sugar-scraped-1',
+            title: 'Zuckerpreise aus aktueller Marktanalyse',
+            summary: 'Live-Daten von Yahoo Finance zeigen aktuelle Marktentwicklung',
+            timestamp: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
+            source: 'Yahoo Finance'
+          }
+        ]
+      };
+
+      return commodityData;
+    } catch (error) {
+      console.error('Error in getLatestSugarPrice:', error);
+      return null;
+    }
+  }
+
+  async getLatestCocoaPrice(): Promise<CommodityData | null> {
+    try {
+      const { data, error } = await supabase
+        .from('scraped_commodity_prices')
+        .select('*')
+        .eq('commodity_id', 'cocoa')
+        .order('scraped_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (error) {
+        console.error('Error fetching scraped cocoa price:', error);
+        return null;
+      }
+
+      if (!data) {
+        console.log('No scraped cocoa price data found');
+        return null;
+      }
+
+      const scrapedData = data as ScrapedCommodityPrice;
+
+      const commodityData: CommodityData = {
+        id: 'cocoa',
+        name: 'Cocoa',
+        nameDe: 'Kakaopreise (Live)',
+        price: scrapedData.price,
+        currency: scrapedData.currency,
+        change: scrapedData.change_amount || 0,
+        changePercent: scrapedData.change_percent || 0,
+        unit: 'ton',
+        lastUpdated: scrapedData.scraped_at,
+        trend: (scrapedData.change_percent || 0) > 0.1 ? 'up' : (scrapedData.change_percent || 0) < -0.1 ? 'down' : 'stable',
+        icon: '🍫',
+        news: [
+          {
+            id: 'cocoa-scraped-1',
+            title: 'Kakaopreise aus aktueller Marktanalyse',
+            summary: 'Live-Daten von Yahoo Finance zeigen aktuelle Marktentwicklung',
+            timestamp: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
+            source: 'Yahoo Finance'
+          }
+        ]
+      };
+
+      return commodityData;
+    } catch (error) {
+      console.error('Error in getLatestCocoaPrice:', error);
+      return null;
+    }
+  }
+
+  async getLatestButterPrice(): Promise<CommodityData | null> {
+    try {
+      const { data, error } = await supabase
+        .from('scraped_commodity_prices')
+        .select('*')
+        .eq('commodity_id', 'butter')
+        .order('scraped_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (error) {
+        console.error('Error fetching scraped butter price:', error);
+        return null;
+      }
+
+      if (!data) {
+        console.log('No scraped butter price data found');
+        return null;
+      }
+
+      const scrapedData = data as ScrapedCommodityPrice;
+
+      const commodityData: CommodityData = {
+        id: 'butter',
+        name: 'Butter',
+        nameDe: 'Butterpreise (Live)',
+        price: scrapedData.price,
+        currency: scrapedData.currency,
+        change: scrapedData.change_amount || 0,
+        changePercent: scrapedData.change_percent || 0,
+        unit: 'kg',
+        lastUpdated: scrapedData.scraped_at,
+        trend: (scrapedData.change_percent || 0) > 0.1 ? 'up' : (scrapedData.change_percent || 0) < -0.1 ? 'down' : 'stable',
+        icon: '🧈',
+        news: [
+          {
+            id: 'butter-scraped-1',
+            title: 'Butterpreise aus aktueller Marktanalyse',
+            summary: 'Live-Daten von Yahoo Finance zeigen aktuelle Marktentwicklung',
+            timestamp: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
+            source: 'Yahoo Finance'
+          }
+        ]
+      };
+
+      return commodityData;
+    } catch (error) {
+      console.error('Error in getLatestButterPrice:', error);
+      return null;
+    }
+  }
+
   async triggerCoffeePriceScraping(): Promise<{ success: boolean; error?: string }> {
     try {
       const { data, error } = await supabase.functions.invoke('scrape-coffee-price', {
@@ -162,6 +318,78 @@ class ScrapedDataService {
 
       if (error) {
         console.error('Error triggering wheat price scraping:', error);
+        return { success: false, error: error.message };
+      }
+
+      return { success: true };
+    } catch (error) {
+      console.error('Error invoking scrape function:', error);
+      return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+    }
+  }
+
+  async triggerSugarPriceScraping(): Promise<{ success: boolean; error?: string }> {
+    try {
+      const { data, error } = await supabase.functions.invoke('scrape-sugar-price', {
+        body: {}
+      });
+
+      if (error) {
+        console.error('Error triggering sugar price scraping:', error);
+        return { success: false, error: error.message };
+      }
+
+      return { success: true };
+    } catch (error) {
+      console.error('Error invoking scrape function:', error);
+      return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+    }
+  }
+
+  async triggerCocoaPriceScraping(): Promise<{ success: boolean; error?: string }> {
+    try {
+      const { data, error } = await supabase.functions.invoke('scrape-cocoa-price', {
+        body: {}
+      });
+
+      if (error) {
+        console.error('Error triggering cocoa price scraping:', error);
+        return { success: false, error: error.message };
+      }
+
+      return { success: true };
+    } catch (error) {
+      console.error('Error invoking scrape function:', error);
+      return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+    }
+  }
+
+  async triggerButterPriceScraping(): Promise<{ success: boolean; error?: string }> {
+    try {
+      const { data, error } = await supabase.functions.invoke('scrape-butter-price', {
+        body: {}
+      });
+
+      if (error) {
+        console.error('Error triggering butter price scraping:', error);
+        return { success: false, error: error.message };
+      }
+
+      return { success: true };
+    } catch (error) {
+      console.error('Error invoking scrape function:', error);
+      return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+    }
+  }
+
+  async triggerCoffeePriceScrapingYFinance(): Promise<{ success: boolean; error?: string }> {
+    try {
+      const { data, error } = await supabase.functions.invoke('scrape-coffee-price-yfinance', {
+        body: {}
+      });
+
+      if (error) {
+        console.error('Error triggering coffee price scraping (yfinance):', error);
         return { success: false, error: error.message };
       }
 

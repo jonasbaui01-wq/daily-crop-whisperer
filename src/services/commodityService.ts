@@ -127,6 +127,32 @@ class CommodityService {
         }
       }
 
+      // Check for scraped sugar data
+      const scrapedSugar = await scrapedDataService.getLatestSugarPrice();
+      if (scrapedSugar) {
+        commodities.push(scrapedSugar);
+        console.log('Using scraped sugar price data');
+      } else {
+        // Fallback to mock data for sugar
+        const sugarMapping = commodityMappings.find(m => m.id === 'sugar');
+        if (sugarMapping) {
+          commodities.push(this.getMockCommodity(sugarMapping));
+        }
+      }
+
+      // Check for scraped cocoa data
+      const scrapedCocoa = await scrapedDataService.getLatestCocoaPrice();
+      if (scrapedCocoa) {
+        commodities.push(scrapedCocoa);
+        console.log('Using scraped cocoa price data');
+      } else {
+        // Fallback to mock data for cocoa
+        const cocoaMapping = commodityMappings.find(m => m.id === 'cocoa');
+        if (cocoaMapping) {
+          commodities.push(this.getMockCommodity(cocoaMapping));
+        }
+      }
+
       // Check for scraped wheat data
       const scrapedWheat = await scrapedDataService.getLatestWheatPrice();
       if (scrapedWheat) {
@@ -140,11 +166,11 @@ class CommodityService {
         }
       }
 
-      // Add other commodities with mock data (excluding coffee and wheat)
-      for (const mapping of commodityMappings) {
-        if (mapping.id !== 'coffee' && mapping.id !== 'wheat') {
-          commodities.push(this.getMockCommodity(mapping));
-        }
+      // Check for scraped butter data
+      const scrapedButter = await scrapedDataService.getLatestButterPrice();
+      if (scrapedButter) {
+        commodities.push(scrapedButter);
+        console.log('Using scraped butter price data');
       }
     } catch (error) {
       console.error('Error fetching commodities:', error);
@@ -152,31 +178,33 @@ class CommodityService {
       for (const mapping of commodityMappings) {
         commodities.push(this.getMockCommodity(mapping));
       }
+      
+      // Add butter as fallback if not already added
+      if (!commodities.find(c => c.id === 'butter')) {
+        commodities.push({
+          id: 'butter',
+          name: 'Butter',
+          nameDe: 'Butterbörse',
+          price: 6.85,
+          currency: 'EUR',
+          change: 0.12,
+          changePercent: 1.8,
+          unit: 'kg',
+          lastUpdated: new Date().toISOString(),
+          trend: 'up',
+          icon: '🧈',
+          news: [
+            {
+              id: 'butter-1',
+              title: 'Butterpreise steigen aufgrund geringerer Milchproduktion',
+              summary: 'Trockene Witterung führt zu reduzierter Milchleistung der Kühe',
+              timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+              source: 'Agrarmarkt News'
+            }
+          ]
+        });
+      }
     }
-
-    // Add butter as it's not available in commodity API
-    commodities.push({
-      id: 'butter',
-      name: 'Butter',
-      nameDe: 'Butterbörse',
-      price: 6.85,
-      currency: 'EUR',
-      change: 0.12,
-      changePercent: 1.8,
-      unit: 'kg',
-      lastUpdated: new Date().toISOString(),
-      trend: 'up',
-      icon: '🧈',
-      news: [
-        {
-          id: 'butter-1',
-          title: 'Butterpreise steigen aufgrund geringerer Milchproduktion',
-          summary: 'Trockene Witterung führt zu reduzierter Milchleistung der Kühe',
-          timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-          source: 'Agrarmarkt News'
-        }
-      ]
-    });
 
     return commodities;
   }
